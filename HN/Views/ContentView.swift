@@ -14,34 +14,46 @@ struct StoryID: Identifiable {
 
 struct ContentView: View {
     @State var storyIDs: [StoryID]?
+    @State var isAnimation = false
     var body: some View {
         NavigationView {
             Group {
                 if let storyIDs = storyIDs  {
                     List(storyIDs) { storyID in
                         StoryRow(from: storyID.storyID, num: storyID.id)
+                            .frame(height: 75)
+                    }
+                    .refreshable {
+                        withAnimation {
+                            getStories()
+                        }
                     }
                 } else {
                     ProgressView()
-                        .progressViewStyle(.linear)
                 }
             }
             .navigationTitle("Hacker News")
             .onAppear {
-                let url = URL(string: "https://hacker-news.firebaseio.com/v0/topstories.json")!
-                let task = URLSession.shared.dataTask(with: url) { data, response, error in
-                    if let data = data {
-                        do {
-                            let ids = try JSONDecoder().decode([Int].self, from: data)
-                            self.storyIDs = ids.enumerated().map { StoryID(id: $0.offset, storyID: $0.element) }
-                        } catch {
-                            print("Failed to decode JSON: \(error)")
-                        }
-                    }
+                withAnimation {
+                    getStories()
                 }
-                task.resume()
             }
         }
+    }
+    
+    func getStories() {
+        let url = URL(string: "https://hacker-news.firebaseio.com/v0/topstories.json")!
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            if let data = data {
+                do {
+                    let ids = try JSONDecoder().decode([Int].self, from: data)
+                    self.storyIDs = ids.enumerated().map { StoryID(id: $0.offset, storyID: $0.element) }
+                } catch {
+                    print("Failed to decode JSON: \(error)")
+                }
+            }
+        }
+        task.resume()
     }
 }
 
